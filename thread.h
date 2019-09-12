@@ -34,6 +34,10 @@ public:
 		//printf("in thread %p %p \n", pthread_self(), t->tid_);
 		return t->func_(const_cast<char*>(t->name_.c_str()));
 	}
+	pthread_t tid()
+	{
+		return tid_;
+	}
 
 private:
 	pthread_t  tid_;

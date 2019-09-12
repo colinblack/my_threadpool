@@ -8,6 +8,8 @@
 
 #include <iostream>
 #include "thread_pool.h"
+#include <sys/time.h>
+
 
 unsigned count = 0;
 
@@ -19,23 +21,40 @@ void* test(void* arg)
 	return nullptr;
 }
 
+void testThreadPool()
+{
+    ThreadPool pool(condMode);
+
+    if(pool.start(4, 65535) != 0)
+    {
+        printf("pool start failed \n");
+        exit(0);
+    }
+
+    int ret = 0;
+    while(count < 65535)
+    {
+        if((ret = pool.addTask(test)) !=0)
+            printf("add task failed \n");
+      //  usleep(100);
+    }
+}
+
+
 int main()
 {
-	ThreadPool pool(enventfdMode);
-
-	if(pool.start(2, 100) != 0)
-	{
-		printf("pool start failed \n");
-		exit(0);
-	}
-
-	while(count < 10)
-	{
-		pool.addTask(test);
-		sleep(1);
-	}
+    struct timeval begin;
+    gettimeofday(&begin,NULL);
 
 
+    testThreadPool();
+
+
+    struct timeval end;
+    gettimeofday(&end,NULL);
+
+
+    printf("cost %d seconds \n", end.tv_sec - begin.tv_sec);
 	return 0;
 }
 

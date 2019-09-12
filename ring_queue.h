@@ -13,7 +13,7 @@
 
 typedef std::function<void* (void*)> Task;
 
-const int gQueueSize = 65536;
+const int gQueueSize = 655360;
 
 struct RingQueue
 {

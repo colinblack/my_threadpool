@@ -2,7 +2,7 @@ SOURCES=$(wildcard *.cc)
 OBJECTS=$(patsubst %.cc,%.o,$(SOURCES))
 CXX=g++
 PROGRAM=mythreadpool
-CXXFLAGS = -O2 -g -Wall -std=c++11 -fmessage-length=0
+CXXFLAGS = -O2 -g -Wall -std=c++11 -fmessage-length=0 
 LDFLAGS = -lpthread
 
 $(PROGRAM) : $(OBJECTS)

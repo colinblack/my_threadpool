@@ -7,7 +7,6 @@
 
 #include "task.h"
 
-
 CondTask::CondTask()
 	: waitingThreads_(0)
 {
@@ -58,7 +57,7 @@ Task CondTask::pop()
 	return task;
 }
 
-void CondTask::stop()
+void CondTask::stop(const std::vector<std::unique_ptr<Thread>>& thread)
 {
 	pthread_mutex_lock(&mutex_);
 	quit_ = taskQuit;
@@ -86,7 +85,7 @@ EventfdTask::~EventfdTask()
 
 int EventfdTask::push(Task&& task)
 {
-	unsigned seg = 0xffffffff;
+	unsigned long seg = 0xffffffff;
 	if(!queue_.isFull())
 	{
 		queue_.pushTail(std::move(task));
@@ -94,20 +93,26 @@ int EventfdTask::push(Task&& task)
 		int efd = eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK);
 		if(efd == -1)
 		{
-			printf("eventfd failed: %s, file: %s, line: %u", strerror(errno),  __FILE__, __LINE__);
+			printf("eventfd failed: %s, file: %s, line: %u \n", strerror(errno),  __FILE__, __LINE__);
 			return -1;
 		}
 		struct epoll_event event;
-		event.events = EPOLLIN;
+		event.events = EPOLLIN | EPOLLET;
 		event.data.fd = efd;
 
 		if(epoll_ctl(epollfd_, EPOLL_CTL_ADD, efd, &event) == -1)
 		{
-			printf("epoll_ctl failed: %s, file: %s, line: %u", strerror(errno),  __FILE__, __LINE__);
+			printf("epoll_ctl failed: %s, file: %s, line: %u \n", strerror(errno),  __FILE__, __LINE__);
 			return -1;
 		}
 
-		return write(efd, &seg, sizeof(seg));
+		if(write(efd, &seg, sizeof(seg)) == -1)
+        {
+			printf("write failed: %s, file: %s, line: %u \n", strerror(errno), __FILE__, __LINE__);
+            return -1;
+        }
+
+		return 0;
 	}
 
 	return -1;
@@ -119,13 +124,13 @@ Task EventfdTask::pop()
 	int num = epoll_wait(epollfd_, events_, maxEvents, -1);
 	if(num == -1)
 	{
-		printf("epoll wait error: %s, file: %s, line: %u", strerror(errno),  __FILE__, __LINE__);
+		printf("epoll wait error: %s, file: %s, line: %u \n", strerror(errno),  __FILE__, __LINE__);
 		return nullptr;
 	}
-	unsigned seg = 0;
+	unsigned long seg = 0;
 	if(read(events_[0].data.fd, &seg, sizeof(seg)) == -1)
 	{
-		printf("read failed: %s, file: %s, line: %u", strerror(errno),  __FILE__, __LINE__);
+		printf("read failed: %s, file: %s, line: %u \n", strerror(errno),  __FILE__, __LINE__);
 		return nullptr;
 	}
 
@@ -134,8 +139,12 @@ Task EventfdTask::pop()
 	return queue_.popFront();
 }
 
-void EventfdTask::stop()
+void EventfdTask::stop(const std::vector<std::unique_ptr<Thread>>& thread)
 {
-	return;
+	for(auto& t : thread)
+	{
+		pthread_cancel(t->tid());
+	//	pthread_kill(t->tid(), SIGTERM); 给线程发送信号
+	}
 }
 

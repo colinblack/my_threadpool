@@ -30,7 +30,7 @@ ThreadPool::~ThreadPool()
 {
 	if(bStarted_)
 	{
-		task_->stop();
+		task_->stop(threads_);
 		bStarted_ = false;
 		for(int i = threads_.size()-1; i >= 0; --i)
 		{

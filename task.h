@@ -14,6 +14,9 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 #include <string.h>
+#include "thread.h"
+#include <memory>
+#include <signal.h>
 
 enum eTaskStaus
 {
@@ -36,7 +39,7 @@ public:
 
 	virtual int push(Task&& task) = 0;
 	virtual Task pop() = 0;
-	virtual void stop() = 0;
+	virtual void stop(const std::vector<std::unique_ptr<Thread>>& ) = 0;
 	inline bool isEmpty(){return queue_.isEmpty();}
 	inline bool isFull(){return queue_.isFull();}
 	void reserve(int size){queue_.reverse(size);};
@@ -54,7 +57,7 @@ public:
 
 	int push(Task&& );
 	Task pop();
-	void stop();
+	void stop(const std::vector<std::unique_ptr<Thread>>& );
 
 private:
 	unsigned waitingThreads_;
@@ -71,7 +74,7 @@ public:
 
 	int push(Task&& );
 	Task pop();
-	void stop();
+	void stop(const std::vector<std::unique_ptr<Thread>>&);
 
 private:
 	int epollfd_;
